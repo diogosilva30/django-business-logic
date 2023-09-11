@@ -1,0 +1,2 @@
+drf-spetacular==0.26.4
+djangorestframework==3.14.0
