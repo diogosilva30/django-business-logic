@@ -2,34 +2,32 @@
 encapsulations of data access logic. They are responsible for
 interacting with the database and returning domain objects.
 """
+from typing import Type, TypeVar
+
 from django.shortcuts import get_object_or_404
-from .models import Book
+from .models import BookDTO, BookORM
+
+T = TypeVar("T", bound=BookORM)
+D = TypeVar("D", bound=BookDTO)
 
 
-class BookRepository:
-    @staticmethod
-    def get_by_id(book_id: int) -> Book:
-        """Get a book by its id.
+class BaseRepository:
+    dto_class: Type[D]
 
-        Parameters
-        ----------
-        book_id : int
-            The id of the book to get.
+    def to_dto(self, instance: T) -> D:
+        return self.dto_class.from_orm(instance)
 
-        Returns
-        -------
-        Book
-            The book with the given id.
 
-        Raises
-        ------
-        Http404
-            If no book with the given id exists.
-        """
-        return get_object_or_404(Book, id=book_id)
+class BookRepository(BaseRepository):
+    dto_class = BookDTO
 
-    @staticmethod
-    def update_owner(*, book: Book, owner_uuid: str) -> Book:
+    def get_by_id(self, *, book_id: int) -> BookDTO:
+        """Get a book by its id."""
+
+        django_book = get_object_or_404(BookORM, id=book_id)
+        return self.to_dto(django_book)
+
+    def update_owner(self, *, book_id: int, owner_uuid: str) -> BookDTO:
         """Update the owner of a book.
         Parameters
         ----------
@@ -43,6 +41,7 @@ class BookRepository:
         Book
             The updated book.
         """
-        book.owner_uuid = owner_uuid
-        book.save()
-        return book
+        django_book = get_object_or_404(BookORM, id=book_id)
+        django_book.owner_uuid = owner_uuid
+        django_book.save(update_fields=["owner_uuid"])
+        return self.to_dto(django_book)

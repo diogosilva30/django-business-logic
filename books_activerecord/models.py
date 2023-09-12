@@ -9,3 +9,12 @@ class Book(models.Model):
     quantity = models.PositiveIntegerField(default=0)
 
     owner_uuid = models.UUIDField(null=True)
+
+    def borrow(self, user_uuid: str) -> bool:
+        """Active Record Approach for borrowing a book from the library."""
+        if self.quantity > 0:
+            self.quantity -= 1
+            self.owner_uuid = user_uuid
+            self.save(update_fields=["quantity", "owner_uuid"])
+            return True
+        return False
